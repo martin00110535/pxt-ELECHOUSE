@@ -1,49 +1,68 @@
-//% weight=100 color=#0fbc11 icon="\uf130"
-namespace VRModule {
+//% color=#0fbc11 icon="\uf130" block="Voice Recognition"
+namespace voiceRecognition {
+    let onCommandCallbacks: { [key: number]: () => void } = {};
 
-    function sendCommand(cmd: number[]): void {
-        let buffer = pins.createBuffer(cmd.length)
-        for (let i = 0; i < cmd.length; i++) {
-            buffer.setUint8(i, cmd[i])
-        }
-        serial.writeBuffer(buffer)
-    }
-
-    //% block="wake recognizer"
-    export function wakeRecognizer(): void {
-        serial.writeString("settings\r\n") // Or just "settings" if no terminator needed
-    }
-
-
+    /**
+     * Initialize the Voice Recognition module.
+     * @param tx the TX pin, eg: SerialPin.P0
+     * @param rx the RX pin, eg: SerialPin.P1
+     */
     //% block
-    export function checkRecognizer(): void {
-        wakeRecognizer()                 // Wake the device
-        sendCommand([0xAA, 0x02, 0x01, 0x0A]) // Run original command after waking
+    export function init(tx: SerialPin, rx: SerialPin): void {
+        serial.redirect(tx, rx, BaudRate.BaudRate9600);
+        basic.pause(100);
+        clear();
     }
 
+    /**
+     * Clear all loaded voice commands.
+     */
     //% block
-    export function loadRecords(records: number[]): void {
-        let len = 2 + records.length
-        let cmd = [0xAA, len, 0x30].concat(records)
-        cmd.push(0x0A)
-        sendCommand(cmd)
+    export function clear(): void {
+        let cmd = pins.createBuffer(4);
+        cmd.setNumber(NumberFormat.UInt8LE, 0, 0xAA); // FRAME_HEAD
+        cmd.setNumber(NumberFormat.UInt8LE, 1, 0x02); // len
+        cmd.setNumber(NumberFormat.UInt8LE, 2, 0x31); // FRAME_CMD_CLEAR
+        cmd.setNumber(NumberFormat.UInt8LE, 3, 0x0A); // FRAME_END
+        serial.writeBuffer(cmd);
+        basic.pause(100);
     }
 
+    /**
+     * Load a command by its record number.
+     * @param record the record number to load
+     */
     //% block
-    export function listen(callback: (data: string) => void): void {
-        control.inBackground(function () {
+    export function loadCommand(record: number): void {
+        let cmd = pins.createBuffer(5);
+        cmd.setNumber(NumberFormat.UInt8LE, 0, 0xAA); // FRAME_HEAD
+        cmd.setNumber(NumberFormat.UInt8LE, 1, 0x03); // len
+        cmd.setNumber(NumberFormat.UInt8LE, 2, 0x30); // FRAME_CMD_LOAD
+        cmd.setNumber(NumberFormat.UInt8LE, 3, record);
+        cmd.setNumber(NumberFormat.UInt8LE, 4, 0x0A); // FRAME_END
+        serial.writeBuffer(cmd);
+        basic.pause(100);
+    }
+
+    /**
+     * Register code to run when a specific command is recognized.
+     * @param record the record number to listen for
+     * @param handler the code to run
+     */
+    //% block
+    export function onCommand(record: number, handler: () => void): void {
+        onCommandCallbacks[record] = handler;
+        control.inBackground(() => {
             while (true) {
-                let received = serial.readUntil("\n")
-                if (received) {
-                    callback(received)
+                let buf = serial.readBuffer(8);
+                if (buf.length >= 5 && buf.getUint8(2) == 0x0D) { // FRAME_CMD_VR
+                    let recNum = buf.getUint8(4);
+                    if (onCommandCallbacks[recNum]) {
+                        onCommandCallbacks[recNum]();
+                    }
                 }
+                basic.pause(50);
             }
-        })
-    }
-
-    //% block="trim string %text"
-    //% weight=70
-    export function trimString(text: string): number {
-        return parseFloat(text.trim())
+        });
     }
 }
