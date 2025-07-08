@@ -10,7 +10,7 @@ namespace voiceRecognition {
     //% block
     export function init(tx: SerialPin, rx: SerialPin): void {
         serial.redirect(tx, rx, BaudRate.BaudRate9600);
-        basic.pause(100);
+        basic.pause(1000);
         clear();
     }
 
@@ -64,5 +64,20 @@ namespace voiceRecognition {
                 basic.pause(50);
             }
         });
+    }
+    //% block
+    export function recognize(timeout: number = 50): number {
+        // Send recognize command (VR module expects a certain protocol, but for MakeCode, we just listen for a response)
+        let start = input.runningTime()
+        while (input.runningTime() - start < timeout) {
+            let buf = serial.readBuffer(8)
+            // Check for a valid VR response (FRAME_CMD_VR = 0x0D)
+            if (buf.length >= 5 && buf.getUint8(2) == 0x0D) {
+                // buf[4] is the record number
+                return buf.getUint8(4)
+            }
+            basic.pause(5)
+        }
+        return -1 // No command recognized
     }
 }
