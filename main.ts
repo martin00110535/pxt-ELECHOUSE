@@ -38,5 +38,9 @@ namespace VRModule {
     }
 }
 
+//% block
+export function trimString(text: string): string {
+    return text.trim()
+}
 
 
