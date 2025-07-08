@@ -1,1 +1,13 @@
+{
+  "name": "vrmodule",
+  "description": "Voice Recognition Module V3.1 for micro:bit",
+  "dependencies": {
+    "core": "*"
+  },
+  "files": [
+    "main.ts",
+    "README.md"
+  ],
+  "preferredEditor": "ts"
+}
 
