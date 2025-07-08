@@ -1,5 +1,3 @@
-
-
 //% weight=100 color=#0fbc11 icon="\uf130"
 namespace VRModule {
     serial.redirect(TX, RX, BAUD)
@@ -36,11 +34,10 @@ namespace VRModule {
             }
         })
     }
+
+    //% block="trim string %text"
+    //% weight=70
+    export function trimString(text: string): string {
+        return text.trim()
+    }
 }
-
-//% block
-export function trimString(text: string): string {
-    return text.trim()
-}
-
-
