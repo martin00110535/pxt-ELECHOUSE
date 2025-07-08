@@ -1,6 +1,4 @@
-const TX = SerialPin.P2
-const RX = SerialPin.P1
-const BAUD = 9600
+
 
 //% weight=100 color=#0fbc11 icon="\uf130"
 namespace VRModule {
@@ -39,3 +37,18 @@ namespace VRModule {
         })
     }
 }
+
+//% weight=100 color=#0fbc11 icon="\uf130"
+namespace VRModule {
+
+    function readID(): string {
+        let data = serial.readUntil(serial.delimiters(Delimiters.NewLine))
+        return data
+    }
+
+    //% block="Get recognized ID with cmd"
+    export function getRecognizedID(): string {
+        return readID()
+    }
+}
+
