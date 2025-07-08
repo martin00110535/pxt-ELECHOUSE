@@ -1,6 +1,7 @@
 //% weight=100 color=#0fbc11 icon="\uf130"
 namespace VRModule {
-    serial.redirect(TX, RX, BAUD)
+    serial.redirect(SerialPin.P1, SerialPin.P2, BaudRate.BaudRate9600)
+
 
     function sendCommand(cmd: number[]): void {
         let buffer = pins.createBuffer(cmd.length)
