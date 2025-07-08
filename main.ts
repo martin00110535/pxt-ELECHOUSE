@@ -9,9 +9,16 @@ namespace VRModule {
         serial.writeBuffer(buffer)
     }
 
+    //% block="wake recognizer"
+    export function wakeRecognizer(): void {
+        serial.writeString("settings\r\n") // Or just "settings" if no terminator needed
+    }
+
+
     //% block
     export function checkRecognizer(): void {
-        sendCommand([0xAA, 0x02, 0x01, 0x0A])
+        wakeRecognizer()                 // Wake the device
+        sendCommand([0xAA, 0x02, 0x01, 0x0A]) // Run original command after waking
     }
 
     //% block
