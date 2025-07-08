@@ -37,7 +37,7 @@ namespace VRModule {
 
     //% block="trim string %text"
     //% weight=70
-    export function trimString(text: string): string {
+    export function trimString(text: string): number {
         return parseFloat(text.trim())
     }
 }
