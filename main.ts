@@ -70,4 +70,24 @@ namespace VoiceBuffer {
     export function getRecordNumber(buf: Buffer): number {
         return readByte(buf, 3)
     }
+
+    /**
+     * Send a load command to activate specific record IDs
+     * @param records array of record numbers to load
+     */
+    //% block="load voice records %records"
+    //% weight=90
+    export function loadVoiceRecords(records: number[]): void {
+        let len = 2 + records.length
+        let cmd = [0xAA, len, 0x30].concat(records)
+        cmd.push(0x0A)
+
+        let buffer = pins.createBuffer(cmd.length)
+        for (let i = 0; i < cmd.length; i++) {
+            buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
+        }
+
+        serial.redirect(SerialPin.P16, SerialPin.P15, BaudRate.BaudRate115200)
+        serial.writeBuffer(buffer)
+    }
 }
