@@ -30,7 +30,7 @@ namespace VRModule {
             basic.showString(response.toHex())
 
 
-            if (response.length >= 5 && response.getNumber(NumberFormat.UInt8LE, 2) == 0x30) {
+            if (response.getNumber(NumberFormat.UInt8LE, 2) == 0x30) {
                 let statusCode = response.getNumber(NumberFormat.UInt8LE, 4)
                 switch (statusCode) {
                     case 0x00: basic.showString("Loaded"); break
@@ -71,7 +71,7 @@ namespace VRModule {
             basic.pause(200)  // Give the module time to reply
             let response = serial.readBuffer(20)  // Adjust length if needed
 
-            if (response.length >= 5 && response.getNumber(NumberFormat.UInt8LE, 2) == 0x01) {
+            if (response.getNumber(NumberFormat.UInt8LE, 2) == 0x01) {
                 let numRecords = response.getNumber(NumberFormat.UInt8LE, 3)
                 let result = ""
                 for (let i = 0; i < numRecords; i++) {
