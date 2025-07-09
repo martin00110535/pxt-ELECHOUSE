@@ -76,7 +76,14 @@ namespace VRModule {
 
         control.inBackground(function () {
             basic.pause(200)  // Give the module time to reply
-            let response = serial.readBuffer(20)  // Adjust length if needed
+            let response = serial.readBuffer(64)  // Adjust length if needed
+
+
+            if (response.length > 0) {
+                basic.showString(response.toHex())
+            } else {
+                basic.showString("Empty")
+            }
 
             if (response.getNumber(NumberFormat.UInt8LE, 2) == 0x01) {
                 let numRecords = response.getNumber(NumberFormat.UInt8LE, 3)
