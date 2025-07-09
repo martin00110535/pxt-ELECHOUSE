@@ -69,9 +69,9 @@ namespace VRModule {
             }
         })
         serial.onDataReceived("\n", function () {
-        let received = serial.readString()
-        basic.showString(received.trim())
-})
+        let data = serial.readBuffer(32)
+        basic.showString(data.toHex())
+        })
     }
 
     //% block="check recognizer status and show loaded records"
