@@ -21,12 +21,23 @@ namespace VRModule {
     }
 
     //% block
+    //% block="load voice records %records"
+    //% weight=90
     export function loadRecords(records: number[]): void {
-        let len = 2 + records.length
+        if (!records || records.length == 0) return
+
+        let len = 1 + records.length  // 1 byte for command + N records
         let cmd = [0xAA, len, 0x30].concat(records)
-        cmd.push(0x0A)
-        sendCommand(cmd)
+        cmd.push(0x0A)  // Frame end
+
+        let buffer = pins.createBuffer(cmd.length)
+        for (let i = 0; i < cmd.length; i++) {
+            buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
+        }
+
+        serial.writeBuffer(buffer)
     }
+
 
     //% block="initialize recognizer with records %records"
     export function initializeRecognizer(records: number[]): void {
