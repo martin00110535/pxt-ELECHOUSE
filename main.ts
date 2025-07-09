@@ -87,7 +87,6 @@ namespace VoiceBuffer {
             buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
         }
 
-        serial.redirect(SerialPin.P16, SerialPin.P15, BaudRate.BaudRate115200)
-        serial.writeBuffer(buffer)
+
     }
 }
