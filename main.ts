@@ -81,5 +81,36 @@ namespace VRModule {
             }
         })
     }
+    namespace VoiceBuffer {
+    /**
+     * Extracts a specific byte from a buffer
+     * @param buf buffer from serial.readBuffer()
+     * @param offset byte position to read
+     */
+    export function readByte(buf: Buffer, offset: number): number {
+        return buf.getNumber(NumberFormat.UInt8LE, offset)
+    }
+
+    /**
+     * Checks if a buffer matches the expected Elechouse response
+     * @param buf buffer from serial.readBuffer()
+     * @param cmd expected command code (e.g., 0x31)
+     */
+    export function isCommand(buf: Buffer, cmd: number): boolean {
+        // Elechouse messages typically follow: AA LEN CMD ...
+        let header = readByte(buf, 0)
+        let command = readByte(buf, 2)
+        return header == 0xAA && command == cmd
+    }
+
+    /**
+     * Gets the recognized record number from buffer (usually at index 3 or 4)
+     * Customize based on your module’s response format.
+     */
+    export function getRecordNumber(buf: Buffer): number {
+        // This depends on exact protocol; often at byte[3] or [4]
+        return readByte(buf, 3)
+    }
+}
 
 }
