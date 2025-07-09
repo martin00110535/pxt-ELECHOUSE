@@ -86,6 +86,7 @@ namespace VoiceBuffer {
         for (let i = 0; i < cmd.length; i++) {
             buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
         }
+        serial.writeBuffer(buffer)
 
 
     }
