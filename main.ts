@@ -27,6 +27,12 @@ namespace VRModule {
             buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
         }
 
+        serial.onDataReceived("\n", function () {
+            let data = serial.readBuffer(32)
+            basic.showString(data.toHex())
+        })
+
+
         serial.writeBuffer(buffer)
 
         control.inBackground(function () {
