@@ -27,6 +27,8 @@ namespace VRModule {
         control.inBackground(function () {
             basic.pause(200)
             let response = serial.readBuffer(10)
+            basic.showString(response.toHex())
+
 
             if (response.length >= 5 && response.getNumber(NumberFormat.UInt8LE, 2) == 0x30) {
                 let statusCode = response.getNumber(NumberFormat.UInt8LE, 4)
