@@ -9,6 +9,13 @@ namespace VRModule {
         serial.writeBuffer(buffer)
     }
 
+    //% block="module LED blink %on"
+    export function setLedBlink(on: boolean): void {
+        // AA LEN=0x04, CMD=0x36, 0x00=channel, DATA=(0|1), 0x0A
+        let cmd = [0xAA, 0x04, 0x36, 0x00, on ? 1 : 0, 0x0A]
+        sendCommand(cmd)
+    }
+
     //% block="wake recognizer"
     export function wakeRecognizer(): void {
         serial.writeString("settings\r\n")
@@ -62,6 +69,23 @@ namespace VRModule {
         wakeRecognizer()
         basic.pause(200)
         loadRecords(records)
+    }
+
+    //% block="start voice recognition"
+    export function startRecognition(): void {
+        control.inBackground(() => {
+            while (true) {
+                ensureSerial()
+                // AA LEN=0x02, CMD=0x07, 0x0A → trigger 1‐shot recognition
+                serial.writeBuffer(pins.createBufferFromArray([0xAA, 0x02, 0x07, 0x0A]))
+                basic.pause(300)   // module busy-wait
+                let resp = serial.readBuffer(8)
+                if (resp.length >= 4 && resp.getNumber(NumberFormat.UInt8LE, 2) == 0x07) {
+                    let recId = resp.getNumber(NumberFormat.UInt8LE, 3)
+                    control.raiseEvent(0x1000, recId)  // fire custom event
+                }
+            }
+        })
     }
 
     //% block="start listening for voice commands"
