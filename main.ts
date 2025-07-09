@@ -65,12 +65,20 @@ namespace VRModule {
     export function getRecognizedText(): string {
         return lastVoiceCommand
     }
-}
 
-// Separate helper namespace
-namespace VoiceBuffer {
+    //% block="check recognizer status"
+    export function checkRecognizer(): void {
+        let cmd = [0xAA, 0x02, 0x01, 0x0A]
 
-    export function readByte(buf: Buffer, offset: number): number {
+        let buffer = pins.createBuffer(cmd.length)
+        for (let i = 0; i < cmd.length; i++) {
+            buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
+        }
+
+        serial.writeBuffer(buffer)
+    }
+
+        export function readByte(buf: Buffer, offset: number): number {
         return buf.getNumber(NumberFormat.UInt8LE, offset)
     }
 
@@ -102,3 +110,4 @@ namespace VoiceBuffer {
 
     }
 }
+
