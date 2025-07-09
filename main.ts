@@ -14,11 +14,7 @@ namespace VRModule {
         serial.writeString("settings\r\n")
     }
 
-    //% block
-    export function checkRecognizer(): void {
-        wakeRecognizer()
-        sendCommand([0xAA, 0x02, 0x01, 0x0A])
-    }
+
 
     //% block
     //% block="load voice records %records"
