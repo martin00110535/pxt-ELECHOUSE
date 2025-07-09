@@ -22,7 +22,7 @@ namespace VRModule {
 
     //% block="module LED blink %on"
     export function setLedBlink(on: boolean): void {
-        let cmd = [0xAA, 0x04, 0x36, 0x00, on ? 1 : 0, 0x0A]
+        let cmd = [0xAA, 0x04, 0x36, 0x00, 0x01, 0x0A]
         sendCommand(cmd)
     }
 
