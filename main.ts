@@ -25,6 +25,7 @@ namespace VRModule {
         sendCommand(cmd)
 
         control.inBackground(function () {
+            basic.pause(200)
             let response = serial.readBuffer(10)
 
             if (response.length >= 5 && response.getNumber(NumberFormat.UInt8LE, 2) == 0x30) {
