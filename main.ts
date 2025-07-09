@@ -68,6 +68,10 @@ namespace VRModule {
                 }
             }
         })
+        serial.onDataReceived("\n", function () {
+        let received = serial.readString()
+        basic.showString(received.trim())
+})
     }
 
     //% block="check recognizer status and show loaded records"
@@ -75,7 +79,7 @@ namespace VRModule {
         sendCommand([0xAA, 0x02, 0x01, 0x0A])  // Request recognizer status
 
         control.inBackground(function () {
-            basic.pause(200)  // Give the module time to reply
+            basic.pause(1000)  // Give the module time to reply
             let response = serial.readBuffer(64)  // Adjust length if needed
 
 
