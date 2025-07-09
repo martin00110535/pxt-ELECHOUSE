@@ -18,19 +18,23 @@ namespace VRModule {
     export function loadRecords(records: number[]): void {
         if (!records || records.length == 0) return
 
-        let len = 1 + records.length
+        let len = 1 + records.length  // Correct LEN field
         let cmd = [0xAA, len, 0x30].concat(records)
         cmd.push(0x0A)
 
-        sendCommand(cmd)
+        let buffer = pins.createBuffer(cmd.length)
+        for (let i = 0; i < cmd.length; i++) {
+            buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
+        }
+
+        serial.writeBuffer(buffer)
 
         control.inBackground(function () {
-            basic.pause(200)
-            let response = serial.readBuffer(10)
-            basic.showString(response.toHex())
+            basic.pause(300)  // Give module time to reply
+            let response = serial.readBuffer(20)
+            basic.showString(response.toHex())  // Debug output
 
-
-            if (response.getNumber(NumberFormat.UInt8LE, 2) == 0x30) {
+            if (response.length >= 5 && response.getNumber(NumberFormat.UInt8LE, 2) == 0x30) {
                 let statusCode = response.getNumber(NumberFormat.UInt8LE, 4)
                 switch (statusCode) {
                     case 0x00: basic.showString("Loaded"); break
@@ -40,9 +44,12 @@ namespace VRModule {
                     case 0xFF: basic.showString("Invalid"); break
                     default: basic.showString("Err")
                 }
+            } else {
+                basic.showString("No response")
             }
         })
     }
+
 
     //% block="initialize recognizer with records %records"
     export function initializeRecognizer(records: number[]): void {
