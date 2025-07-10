@@ -17,14 +17,10 @@ namespace voiceRecognition {
     export function train(record: number): boolean {
         clearSerialBuffer();
         sendPacket(0x31, [record]);
-        // Optionally: prompt user to speak here
         let resp = receivePacket(3000);
-        if (resp) {
-            // Uncomment for debug: serial.writeNumbers(resp);
-            if (resp[2] == 0x31) {
-                return true;
-            }
-        } 
+        if (resp && resp[2] == 0x31) {
+            return true;
+        }
         return false;
     }
 
@@ -49,7 +45,7 @@ namespace voiceRecognition {
         }
         packet.push(FRAME_END);
 
-        // Always use manual buffer creation for MakeCode compatibility
+        // Manual buffer creation for MakeCode compatibility
         let buf = pins.createBuffer(packet.length);
         for (let i = 0; i < packet.length; i++) {
             buf.setUint8(i, packet[i]);
