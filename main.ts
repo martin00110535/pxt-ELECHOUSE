@@ -1,122 +1,102 @@
-//% weight=100 color=#0fbc11 icon="\uf130"
-namespace VRModule {
+/**
+ * Voice Recognition V2/V3 MakeCode extension (partial port from Arduino C++)
+ * Adapted for MakeCode and micro:bit by Copilot
+ *
+ * Note: Actual hardware UART/serial access may be limited on MakeCode targets.
+ * Only one serial port is available on micro:bit, so use wisely.
+ */
 
-    let serialInitialized = false
+const FRAME_HEAD = 0xAA;
+const FRAME_END = 0x0A;
+// Define other frame command constants as needed...
 
-    function ensureSerial(): void {
-        if (!serialInitialized) {
-            serial.redirect(SerialPin.P1, SerialPin.P0, BaudRate.BaudRate9600)
-            basic.pause(100)
-            serialInitialized = true
+// Utility: Convert a number to 2-digit hex string
+function toHex(val: number): string {
+    return val.toString(16).toUpperCase().padStart(2, "0");
+}
+
+namespace voiceRecognition {
+    // Internal buffer
+    let vr_buf: number[] = [];
+
+    /**
+     * Send a command packet to the voice recognition module.
+     * 
+     * @param cmd Command byte
+     * @param data Optional payload
+     */
+    function sendPacket(cmd: number, data?: number[]): void {
+        let packet: number[] = [];
+        packet.push(FRAME_HEAD);
+        if (data && data.length > 0) {
+            packet.push(data.length + 1);
+            packet.push(cmd);
+            packet = packet.concat(data);
+        } else {
+            packet.push(2); // length
+            packet.push(cmd);
         }
+        packet.push(FRAME_END);
+        // Send over serial
+        serial.writeBuffer(Buffer.fromArray(packet));
     }
 
-    function sendCommand(cmd: number[]): void {
-        ensureSerial()
-        let buffer = pins.createBuffer(cmd.length)
-        for (let i = 0; i < cmd.length; i++) {
-            buffer.setNumber(NumberFormat.UInt8LE, i, cmd[i])
+    /**
+     * Receive a response packet from the module.
+     * Returns the buffer if a valid packet is received, undefined otherwise.
+     */
+    function receivePacket(timeout: number = 1000): number[] | undefined {
+        let start = input.runningTime();
+        let buf: number[] = [];
+        while (input.runningTime() - start < timeout) {
+            if (serial.readable()) {
+                let b = serial.read();
+                buf.push(b);
+                // Check if we have a complete frame
+                if (buf.length > 2 && buf[0] == FRAME_HEAD && buf[buf.length - 1] == FRAME_END) {
+                    return buf;
+                }
+            }
         }
-        serial.writeBuffer(buffer)
+        return undefined;
     }
 
-    //% block="module LED blink %on"
-    export function setLedBlink(on: boolean): void {
-        let cmd = [0xAA, 0x04, 0x36, 0x00, 0x01, 0x0A]
-        sendCommand(cmd)
+    /**
+     * Recognize voice command.
+     * Returns recognized index or -1 on failure.
+     */
+    //% block
+    export function recognize(timeout: number = 1000): number {
+        sendPacket(/*FRAME_CMD_VR*/ 0x22);
+        let resp = receivePacket(timeout);
+        if (resp && resp.length > 4 && resp[2] == /*FRAME_CMD_VR*/ 0x22) {
+            return resp[4]; // Example: return recognized index
+        }
+        return -1;
     }
 
-    //% block="wake recognizer"
-    export function wakeRecognizer(): void {
-        ensureSerial()
-        serial.writeString("settings\r\n")
+    /**
+     * Train a new record.
+     */
+    //% block
+    export function train(record: number): boolean {
+        sendPacket(/*FRAME_CMD_TRAIN*/ 0x31, [record]);
+        let resp = receivePacket(2000);
+        if (resp && resp[2] == /*FRAME_CMD_TRAIN*/ 0x31) {
+            return true;
+        }
+        return false;
     }
 
-    //% block="load voice records %records"
-    export function loadRecords(records: number[]): void {
-        if (!records || records.length == 0) return
-
-        ensureSerial()
-        let len = 1 + records.length
-        let cmd = [0xAA, len, 0x30].concat(records)
-        cmd.push(0x0A)
-        sendCommand(cmd)
-
-        control.inBackground(function () {
-            basic.pause(500)
-            let response = serial.readBuffer(32)
-            if (response.length >= 5 && response.getNumber(NumberFormat.UInt8LE, 2) == 0x30) {
-                let statusCode = response.getNumber(NumberFormat.UInt8LE, 4)
-                switch (statusCode) {
-                    case 0x00: basic.showString("Loaded"); break
-                    case 0xFC: basic.showString("Already"); break
-                    case 0xFD: basic.showString("Full"); break
-                    case 0xFE: basic.showString("Untrained"); break
-                    case 0xFF: basic.showString("Invalid"); break
-                    default: basic.showString("Err")
-                }
-            } else {
-                basic.showString("No response")
-            }
-        })
+    /**
+     * Clear all records.
+     */
+    //% block
+    export function clear(): boolean {
+        sendPacket(/*FRAME_CMD_CLEAR*/ 0x33);
+        let resp = receivePacket();
+        return !!resp && resp[2] == /*FRAME_CMD_CLEAR*/ 0x33;
     }
 
-    //% block="initialize recognizer with records %records"
-    export function initializeRecognizer(records: number[]): void {
-        wakeRecognizer()
-        basic.pause(300)
-        loadRecords(records)
-    }
-
-    //% block="start voice recognition"
-    export function startRecognition(): void {
-        ensureSerial()
-        control.inBackground(() => {
-            while (true) {
-                serial.writeBuffer(pins.createBufferFromArray([0xAA, 0x02, 0x07, 0x0A]))
-                basic.pause(300)
-                let resp = serial.readBuffer(8)
-                if (resp.length >= 4 && resp.getNumber(NumberFormat.UInt8LE, 2) == 0x07) {
-                    let recId = resp.getNumber(NumberFormat.UInt8LE, 3)
-                    control.raiseEvent(0x1000, recId)
-                }
-            }
-        })
-    }
-
-    //% block="start listening for text responses"
-    export function startListening(callback: (text: string) => void): void {
-        ensureSerial()
-        serial.onDataReceived("\n", function () {
-            let received = serial.readString().trim()
-            callback(received)
-        })
-    }
-
-    //% block="check recognizer status and show loaded records"
-    export function checkRecognizer(): void {
-        sendCommand([0xAA, 0x02, 0x01, 0x0A])
-
-        control.inBackground(function () {
-            basic.pause(1000)
-            let response = serial.readBuffer(64)
-            if (response.length == 0) {
-                basic.showString("Empty")
-                return
-            }
-
-            if (response.getNumber(NumberFormat.UInt8LE, 2) == 0x01) {
-                let numRecords = response.getNumber(NumberFormat.UInt8LE, 3)
-                let result = ""
-                for (let i = 0; i < numRecords; i++) {
-                    let rec = response.getNumber(NumberFormat.UInt8LE, 4 + i)
-                    result += rec + " "
-                }
-                basic.showString("Loaded: " + result.trim())
-            } else {
-                basic.showString("No records")
-            }
-        })
-    }
-
+    // Add more methods as needed (load, setSignature, etc.)
 }
