@@ -4,6 +4,7 @@ const FRAME_END = 0x0A;
 namespace voiceRecognition {
     //% block
     export function recognize(timeout: number = 1000): number {
+        clearSerialBuffer();
         sendPacket(0x22);
         let resp = receivePacket(timeout);
         if (resp && resp.length > 4 && resp[2] == 0x22) {
@@ -14,17 +15,22 @@ namespace voiceRecognition {
 
     //% block
     export function train(record: number): boolean {
+        clearSerialBuffer();
         sendPacket(0x31, [record]);
-        basic.pause(1000); // Give user time to speak
-        let resp = receivePacket(2000);
-        if (resp && resp[2] == 0x31) {
-            return true;
+        // Optionally: prompt user to speak here
+        let resp = receivePacket(3000);
+        if (resp) {
+            // Uncomment for debug: serial.writeNumbers(resp);
+            if (resp[2] == 0x31) {
+                return true;
+            }
         }
         return false;
     }
 
     //% block
     export function clear(): boolean {
+        clearSerialBuffer();
         sendPacket(0x33);
         let resp = receivePacket();
         return !!resp && resp[2] == 0x33;
@@ -43,6 +49,12 @@ namespace voiceRecognition {
         }
         packet.push(FRAME_END);
         serial.writeBuffer(Buffer.fromArray(packet));
+    }
+
+    function clearSerialBuffer() {
+        while (serial.readable()) {
+            serial.read();
+        }
     }
 
     function receivePacket(timeout: number = 1000): number[] | undefined {
