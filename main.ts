@@ -48,7 +48,17 @@ namespace voiceRecognition {
             packet.push(cmd);
         }
         packet.push(FRAME_END);
-        serial.writeBuffer(Buffer.fromArray(packet));
+
+        // Compatible with MakeCode
+        let buf = pins.createBufferFromArray
+            ? pins.createBufferFromArray(packet)
+            : (() => {
+                let b = pins.createBuffer(packet.length);
+                for (let i = 0; i < packet.length; i++) b.setUint8(i, packet[i]);
+                return b;
+            })();
+
+        serial.writeBuffer(buf);
     }
 
     function clearSerialBuffer() {
