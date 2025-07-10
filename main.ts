@@ -24,7 +24,7 @@ namespace voiceRecognition {
             if (resp[2] == 0x31) {
                 return true;
             }
-        }
+        } 
         return false;
     }
 
@@ -49,15 +49,11 @@ namespace voiceRecognition {
         }
         packet.push(FRAME_END);
 
-        // Compatible with MakeCode
-        let buf = pins.createBufferFromArray
-            ? pins.createBufferFromArray(packet)
-            : (() => {
-                let b = pins.createBuffer(packet.length);
-                for (let i = 0; i < packet.length; i++) b.setUint8(i, packet[i]);
-                return b;
-            })();
-
+        // Always use manual buffer creation for MakeCode compatibility
+        let buf = pins.createBuffer(packet.length);
+        for (let i = 0; i < packet.length; i++) {
+            buf.setUint8(i, packet[i]);
+        }
         serial.writeBuffer(buf);
     }
 
